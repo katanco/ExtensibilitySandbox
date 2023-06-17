@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<OutputPath>C:\Users\Jonathan.Schmitt\Documents\Mendix\LocalSandbox10\extensions\ExtensibilitySandbox</OutputPath>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mendix.StudioPro.ExtensionsAPI" Version="10.0.7858" />
+  </ItemGroup>
+
+  <ItemGroup>
+	  <None Update="manifest.json">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+  </ItemGroup>
+
+</Project>
