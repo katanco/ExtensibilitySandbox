@@ -2,8 +2,11 @@
 using Mendix.StudioPro.ExtensionsAPI.UI.Menu;
 using System.ComponentModel.Composition;
 using Mendix.StudioPro.ExtensionsAPI.Model.Projects;
+using Mendix.StudioPro.ExtensionsAPI.Model.DomainModels;
 using Mendix.StudioPro.ExtensionsAPI.Model;
 using Mendix.StudioPro.ExtensionsAPI.UI.Services;
+using Mendix.StudioPro.ExtensionsAPI.Model.Enumerations;
+using Mendix.StudioPro.ExtensionsAPI.Model.Texts;
 
 namespace Mendix.Extensibility.ExtensibilitySandbox;
 
@@ -21,6 +24,7 @@ public class TestExtension : MenuBarExtension
 
     public override IEnumerable<MenuViewModelBase> GetMenus()
     {
+
         yield return new MenuItemViewModel("Test extension", placeUnder: new[] { "app" }, placeAfter: "tools")
         {
             Action = () =>
@@ -97,12 +101,69 @@ public class TestExtension : MenuBarExtension
                                     if (!module.FromAppStore)
                                     {
                                         // TODO: change to selection
-                                        var TargetEntity = module.DomainModel.GetEntities()[0];
+                                        IEntity entity = CurrentApp.Create<IEntity>();
+                                        entity.Name = "newEntity";
                                         foreach (var attribute in attributes)
                                         {
-                                            // TODO: add attributes
-                                            MessageBox.Show(attribute.ToString());
+                                            IAttribute NewAttribute = CurrentApp.Create<IAttribute>();
+                                            NewAttribute.Name = attribute;
+                                            entity.AddAttribute(NewAttribute);
                                         }
+                                        module.DomainModel.AddEntity(entity);
+                                        break;
+                                    }
+                                }
+                                transaction.Commit();
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        yield return new MenuItemViewModel("Enum from csv", placeUnder: new[] { "app" }, placeAfter: "tools")
+        {
+            Action = () =>
+            {
+                if (CurrentApp != null)
+                {
+                    var ofd = new Eto.Forms.OpenFileDialog
+                    {
+                        MultiSelect = false,
+                        Title = "Open"
+                    };
+
+                    var result = ofd.ShowDialog(new Panel());
+
+                    if (result == DialogResult.Ok)
+                    {
+                        using (var reader = new StreamReader(ofd.FileName))
+                        {
+                            while (!reader.EndOfStream)
+                            {
+                                var line = reader.ReadLine();
+                                var cells = line.Split(',');
+
+                                using ITransaction transaction = CurrentApp.StartTransaction("Entity from sheet");
+                                IProject CurrentProject = (IProject)CurrentApp.Root.Container;
+                                foreach (var module in CurrentProject.GetModules())
+                                {
+                                    if (!module.FromAppStore)
+                                    {
+                                        // TODO: change to selection
+                                        IEnumeration Enum = CurrentApp.Create<IEnumeration>();
+                                        Enum.Name = ofd.FileName;
+                                        foreach (var value in cells)
+                                        {
+                                            IEnumerationValue EnumValue = CurrentApp.Create<IEnumerationValue>();
+                                            EnumValue.Name = value;
+                                            IText EnumCaption = CurrentApp.Create<IText>();
+
+                                            EnumCaption.AddOrUpdateTranslation("en_US", value);
+                                            EnumValue.Caption = EnumCaption;
+                                            Enum.AddValue(EnumValue);
+                                        }
+                                        module.AddDocument(Enum);
                                         break;
                                     }
                                 }
