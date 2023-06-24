@@ -1,4 +1,4 @@
-﻿/*namespace ExtensibilitySandbox;
+﻿namespace ExtensibilitySandbox;
 
 using Mendix.StudioPro.ExtensionsAPI.UI.DockablePane;
 using System.ComponentModel.Composition;
@@ -9,7 +9,7 @@ using Eto.Forms;
 class TestPane : DockablePaneExtension
 {
 
-    //public DockablePanel() { }
+    // public DockablePanel() { }
 
     public override DockablePaneViewModel Open()
     {
@@ -19,4 +19,4 @@ class TestPane : DockablePaneExtension
 
     public const string ID = "test-pane-1";
     public override string Id => ID;
-}*/
+}
