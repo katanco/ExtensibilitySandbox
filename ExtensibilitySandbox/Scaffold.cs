@@ -185,6 +185,19 @@ class Scaffold : DockablePaneExtension
         entityFolder.AddDocument(SaveMicroflow);
 
         /*
+         * cloning attempt, also stopped by unable to create entitytype
+         * 
+        IMicroflow ClonedMicroflow = (IMicroflow) CurrentApp.Copy(module.GetDocuments()[0]);
+        entityFolder.AddDocument(ClonedMicroflow);
+        IMicroflowParameterObject param = microflowService.GetParameters(ClonedMicroflow).First();
+
+        var EntityType = CurrentApp.Create<IEntityType>();
+        EntityType.Entity = entity.QualifiedName;
+
+        param.VariableType = EntityType;
+        */
+
+        /*
          * idk how to instantiate entitytype then
          * System.ArgumentOutOfRangeException: Mendix.StudioPro.ExtensionsAPI.Model.DataTypes.IEntityType is not a valid concrete element type. (Parameter 'T')
         at Mendix.Modeler.ExtensionLoader.ModelProxies.ModelProxy.Create[T]() in Mendix.Modeler.ExtensionLoader\ModelProxies\ModelProxy.cs:line 69

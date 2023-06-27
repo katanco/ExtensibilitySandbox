@@ -263,7 +263,7 @@ public class TestExtension : MenuBarExtension
                             microflowService.TryInsertBeforeActivity(action, CurrentApp.Create<IActionActivity>());
 
 
-                            // appears not to work
+                            // appears not to get a subset of activities
 
                             var list = microflowService.GetAllMicroflowActivities((IMicroflow)unit);
 
