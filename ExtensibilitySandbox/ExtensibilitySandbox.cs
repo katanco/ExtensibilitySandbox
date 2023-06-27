@@ -17,8 +17,6 @@ namespace Mendix.Extensibility.ExtensibilitySandbox;
 [Export(typeof(MenuBarExtension))]
 public class TestExtension : MenuBarExtension
 {
-
-
     private readonly IDockingWindowService dockingWindowService;
     private readonly ISelectorDialogService selectorDialogService;
     private readonly IMicroflowService microflowService;
@@ -39,7 +37,7 @@ public class TestExtension : MenuBarExtension
         {
         };
 
-        yield return new MenuItemViewModel("NUKE", placeUnder: new[] { "app", "Productivity" })
+        yield return new MenuItemViewModel("Nuke :)", placeUnder: new[] { "app", "Productivity" })
         {
             Action = () =>
             {
@@ -76,11 +74,11 @@ public class TestExtension : MenuBarExtension
             }
         };
 
-        yield return new MenuItemViewModel("Pane test", placeUnder: new[] { "app", "Productivity" })
+        yield return new MenuItemViewModel("Scaffold", placeUnder: new[] { "app", "Productivity" })
         {
             Action = () =>
             {
-                dockingWindowService.OpenPane(TestPane.ID);
+                dockingWindowService.OpenPane(Scaffold.ID);
             }
         };
 
@@ -266,19 +264,16 @@ public class TestExtension : MenuBarExtension
 
 
                             // appears not to work
-                            
+
                             var list = microflowService.GetAllMicroflowActivities((IMicroflow)unit);
 
-
-                            foreach (var activity in list)
+                            var createSuccess = microflowService.TryInsertBeforeActivity(list.First(), CurrentApp.Create<IActionActivity>());
+                            if (!createSuccess)
                             {
-                                var createSuccess = microflowService.TryInsertBeforeActivity(activity, CurrentApp.Create<IActionActivity>());
-                                if (!createSuccess)
-                                {
-                                    MessageBox.Show("unsuccessful create");
-                                }
+                                MessageBox.Show("unsuccessful create");
                             }
-                            
+
+
 
                             transaction.Commit();
                         };

@@ -7,14 +7,25 @@ using System.ComponentModel.Composition;
 using Eto.Forms;
 using Eto.Drawing;
 using Mendix.StudioPro.ExtensionsAPI.Model.Projects;
-using Mendix.StudioPro.ExtensionsAPI;
-using Eto.Forms.ThemedControls;
 using System;
+using Mendix.StudioPro.ExtensionsAPI.Model.DomainModels;
+using Mendix.StudioPro.ExtensionsAPI.Model;
+using Mendix.StudioPro.ExtensionsAPI.Services;
+using Mendix.StudioPro.ExtensionsAPI.Model.Microflows;
+using Mendix.StudioPro.ExtensionsAPI.Model.DataTypes;
 
 [Export(typeof(DockablePaneExtension))]
-class TestPane : DockablePaneExtension
+class Scaffold : DockablePaneExtension
 {
+    private readonly IMicroflowService microflowService;
+    private readonly INameValidationService nameValidationService;
 
+    [ImportingConstructor]
+    public Scaffold(IMicroflowService microflowService, INameValidationService nameValidationService)
+    {
+        this.microflowService = microflowService;
+        this.nameValidationService = nameValidationService;
+    }
     // public DockablePanel() { }
 
     public override DockablePaneViewModel Open()
@@ -30,10 +41,10 @@ class TestPane : DockablePaneExtension
             if (!Module.FromAppStore)
             {
 
-                var ModuleItem = new TreeGridItem { Values = new object[] { true, Module.Name }, Expanded = true };
+                var ModuleItem = new TreeGridItem { Values = new object[] { true, Module.Name, Module }, Expanded = true };
                 foreach (var entity in Module.DomainModel.GetEntities())
                 {
-                    ModuleItem.Children.Add(new TreeGridItem { Values = new object[] { true, entity.Name }, Expanded = true });
+                    ModuleItem.Children.Add(new TreeGridItem { Values = new object[] { true, entity.Name, entity }, Expanded = true });
                 }
                 collection.Add(ModuleItem);
             }
@@ -103,11 +114,10 @@ class TestPane : DockablePaneExtension
         };
 
         var Button = new Button();
-        Button.Text = "Fire";
+        Button.Text = "Scaffold";
         Button.Click += (s, e) =>
         {
             var collection = (TreeGridItemCollection)grid.DataStore;
-            var trueCollection = new List<TreeGridItem>();
 
             collection.AsEnumerable().ToList().ForEach(item =>
             {
@@ -117,52 +127,90 @@ class TestPane : DockablePaneExtension
                     var ChildTreeGridItem = (TreeGridItem)Child;
                     if ((bool)ChildTreeGridItem.Values[0])
                     {
-                        trueCollection.Add(ChildTreeGridItem);
-
-                        MessageBox.Show(ChildTreeGridItem.Values[1].ToString());
+                        scaffoldEntity((IModule)TreeGridItem.Values[2], (IEntity)ChildTreeGridItem.Values[2]);
                     }
                 }
             });
 
+            
+
         };
 
         /*
-        layout.Style = "DarkMode";
+         idk how to get dark mode to work
 
-        Eto.Style.Add<TreeGridView>("DarkMode", widget =>
-        {
-            widget.BackgroundColor = Eto.Drawing.Colors.Black;
-            widget.ShowHeader = false;
-        });
-        Eto.Style.Add<TextControl>("DarkMode", widget =>
-        {
-            widget.TextColor = Eto.Drawing.Colors.White;
-        });
+         grid.Style = "Dark";
+
+         Eto.Style.Add<TreeGridView>("DarkMode", widget =>
+         {
+             widget.BackgroundColor = Eto.Drawing.Colors.Black;
+             widget.ShowHeader = false;
+         });
+         Eto.Style.Add<TextControl>("DarkMode", widget =>
+         {
+             widget.TextColor = Eto.Drawing.Colors.White;
+         });
         */
-
-        layout.BackgroundColor = Eto.Drawing.Colors.Gray;
-        layout.Children.AsEnumerable().ToList().ForEach(item =>
-        {
-
-            MessageBox.Show(item.ToString());
-        });
 
         layout.Add(grid);
         layout.Add(Button);
 
-
-
-
-
         return new DockablePaneViewModel
         {
-            Title = "Productivity",
+            Title = "Scaffold",
             Controls = {
                 layout
             },
         };
     }
 
-    public const string ID = "test-pane-1";
+    public const string ID = "scaffold-pane-1";
     public override string Id => ID;
+
+    private void scaffoldEntity(IModule module, IEntity entity)
+    {
+        if (CurrentApp == null)
+        {
+            throw new InvalidOperationException();
+        }
+
+        IProject CurrentProject = (IProject)CurrentApp.Root.Container;
+        using ITransaction transaction = CurrentApp.StartTransaction("Scaffolding" + entity.Name);
+
+        var objectsFolder = getCreateFolder(module, "Objects");
+        var entityFolder = getCreateFolder(objectsFolder, entity.Name);
+
+        var SaveMicroflow = CurrentApp.Create<IMicroflow>();
+        SaveMicroflow.Name = entity.Name + "_Save";
+        entityFolder.AddDocument(SaveMicroflow);
+
+        /*
+         * idk how to instantiate entitytype then
+         * System.ArgumentOutOfRangeException: Mendix.StudioPro.ExtensionsAPI.Model.DataTypes.IEntityType is not a valid concrete element type. (Parameter 'T')
+        at Mendix.Modeler.ExtensionLoader.ModelProxies.ModelProxy.Create[T]() in Mendix.Modeler.ExtensionLoader\ModelProxies\ModelProxy.cs:line 69
+
+        var EntityType = CurrentApp.Create<IEntityType>();
+        EntityType.Entity = entity.QualifiedName;
+        
+
+        SaveMicroflow.MicroflowReturnType = 
+        microflowService.Initialize(SaveMicroflow, (entity.Name, null));
+        */
+
+        transaction.Commit();
+        return;
+    }
+
+    private IFolder getCreateFolder(IFolderBase location, String name)
+    {
+        var FolderExists = location.GetFolders().Any(Folder => Folder.Name == name);
+        if (FolderExists)
+        {
+            return location.GetFolders().First(Folder => Folder.Name == name);
+        }
+        var newObjectsFolder = CurrentApp.Create<IFolder>();
+        newObjectsFolder.Name = name;
+        location.AddFolder(newObjectsFolder);
+        return newObjectsFolder;
+    }
 }
