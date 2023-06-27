@@ -12,6 +12,7 @@
 	</PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Eto.Forms" Version="2.7.5" />
     <PackageReference Include="Mendix.StudioPro.ExtensionsAPI" Version="10.0.7858" />
   </ItemGroup>
 

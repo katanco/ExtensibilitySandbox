@@ -10,7 +10,6 @@ using Mendix.StudioPro.ExtensionsAPI.Model.Texts;
 using Mendix.StudioPro.ExtensionsAPI.Services;
 using ExtensibilitySandbox;
 using Mendix.StudioPro.ExtensionsAPI.Model.Microflows;
-using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 
 namespace Mendix.Extensibility.ExtensibilitySandbox;
@@ -262,11 +261,24 @@ public class TestExtension : MenuBarExtension
                             var actionList = new List<IActivity>() { action };
 
                             microflowService.TryInsertAfterStart((IMicroflow)unit, action);
+
+                            microflowService.TryInsertBeforeActivity(action, CurrentApp.Create<IActionActivity>());
+
+
+                            // appears not to work
+                            
                             var list = microflowService.GetAllMicroflowActivities((IMicroflow)unit);
+
+
                             foreach (var activity in list)
                             {
-                                MessageBox.Show(activity.ToString());
+                                var createSuccess = microflowService.TryInsertBeforeActivity(activity, CurrentApp.Create<IActionActivity>());
+                                if (!createSuccess)
+                                {
+                                    MessageBox.Show("unsuccessful create");
+                                }
                             }
+                            
 
                             transaction.Commit();
                         };
