@@ -1,10 +1,15 @@
-﻿namespace ExtensibilitySandbox;
+﻿using Eto;
+
+namespace ExtensibilitySandbox;
 
 using Mendix.StudioPro.ExtensionsAPI.UI.DockablePane;
 using System.ComponentModel.Composition;
 using Eto.Forms;
 using Eto.Drawing;
 using Mendix.StudioPro.ExtensionsAPI.Model.Projects;
+using Mendix.StudioPro.ExtensionsAPI;
+using Eto.Forms.ThemedControls;
+using System;
 
 [Export(typeof(DockablePaneExtension))]
 class TestPane : DockablePaneExtension
@@ -120,8 +125,33 @@ class TestPane : DockablePaneExtension
             });
 
         };
+
+        /*
+        layout.Style = "DarkMode";
+
+        Eto.Style.Add<TreeGridView>("DarkMode", widget =>
+        {
+            widget.BackgroundColor = Eto.Drawing.Colors.Black;
+            widget.ShowHeader = false;
+        });
+        Eto.Style.Add<TextControl>("DarkMode", widget =>
+        {
+            widget.TextColor = Eto.Drawing.Colors.White;
+        });
+        */
+
+        layout.BackgroundColor = Eto.Drawing.Colors.Gray;
+        layout.Children.AsEnumerable().ToList().ForEach(item =>
+        {
+
+            MessageBox.Show(item.ToString());
+        });
+
         layout.Add(grid);
         layout.Add(Button);
+
+
+
 
 
         return new DockablePaneViewModel
@@ -129,7 +159,7 @@ class TestPane : DockablePaneExtension
             Title = "Productivity",
             Controls = {
                 layout
-    }
+            },
         };
     }
 
