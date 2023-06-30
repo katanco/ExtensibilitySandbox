@@ -40,7 +40,8 @@ public class TestExtension : MenuBarExtension
         };
 
         
-        yield return new MenuItemViewModel("Nuke :)", placeUnder: new[] { "app", "Productivity" })
+        yield return new MenuItemViewModel("Nuke 💣💥😊", placeUnder: new[] { "app", "Productivity" })
+        // TODO: Add a countdown and maybe a sick cat gif
         {
             Action = () =>
             {
