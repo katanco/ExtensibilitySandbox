@@ -18,13 +18,17 @@ using Mendix.StudioPro.ExtensionsAPI.Model.DataTypes;
 class Scaffold : DockablePaneExtension
 {
     private readonly IMicroflowService microflowService;
+    private readonly IMicroflowExpressionService microflowExpressionService;
     private readonly INameValidationService nameValidationService;
+    private readonly IPageGenerationService pageGenerationService;
 
     [ImportingConstructor]
-    public Scaffold(IMicroflowService microflowService, INameValidationService nameValidationService)
+    public Scaffold(IMicroflowService microflowService, INameValidationService nameValidationService, IMicroflowExpressionService microflowExpressionService, IPageGenerationService pageGenerationService)
     {
         this.microflowService = microflowService;
         this.nameValidationService = nameValidationService;
+        this.microflowExpressionService = microflowExpressionService;
+        this.pageGenerationService = pageGenerationService;
     }
     // public DockablePanel() { }
 
@@ -132,7 +136,7 @@ class Scaffold : DockablePaneExtension
                 }
             });
 
-            
+
 
         };
 
@@ -177,53 +181,91 @@ class Scaffold : DockablePaneExtension
         IProject CurrentProject = (IProject)CurrentApp.Root.Container;
         using ITransaction transaction = CurrentApp.StartTransaction("Scaffolding" + entity.Name);
 
-        var objectsFolder = getCreateFolder(module, "Objects");
-        var entityFolder = getCreateFolder(objectsFolder, entity.Name);
+        var objectsFolder = getCreateFolder(CurrentApp, module, "Objects");
+        var pagesFolder = getCreateFolder(CurrentApp, module, "Pages");
+        var objectsEntityFolder = getCreateFolder(CurrentApp, objectsFolder, entity.Name);
+        var pagesEntityFolder = getCreateFolder(CurrentApp, pagesFolder, entity.Name);
 
-        var SaveMicroflow = CurrentApp.Create<IMicroflow>();
-        SaveMicroflow.Name = entity.Name + "_Save";
-        entityFolder.AddDocument(SaveMicroflow);
+        if (entity.GetAttributes() != null)
+        {
+            var documents = pageGenerationService.GenerateOverviewPages(module, new List<IEntity> { entity });
+            // clone documents into pages folder
+            // TODO: move instead of cloning to optimize
+            foreach (var document in documents)
+            {
+                var cloned = CurrentApp.Copy<IDocument>(document);
+                pagesEntityFolder.AddDocument(cloned);
+            }
+            var genFolder = (IFolder)documents.First().Container;
+            module.RemoveFolder(genFolder);
+        }
 
-        /*
-         * cloning attempt, also stopped by unable to create entitytype
-         * 
-        IMicroflow ClonedMicroflow = (IMicroflow) CurrentApp.Copy(module.GetDocuments()[0]);
-        entityFolder.AddDocument(ClonedMicroflow);
-        IMicroflowParameterObject param = microflowService.GetParameters(ClonedMicroflow).First();
+        var ValMicroflow = createEntityParameterMicroflow(CurrentApp, objectsEntityFolder, "SUB_" + entity.Name + "_Val", entity);
+        ValMicroflow.MicroflowReturnType = CurrentApp.Create<IBooleanType>();
 
-        var EntityType = CurrentApp.Create<IEntityType>();
-        EntityType.Entity = entity.QualifiedName;
+        var SubSaveMicroflow = createEntityParameterMicroflow(CurrentApp, objectsEntityFolder, "SUB_" + entity.Name + "_Save", entity);
 
-        param.VariableType = EntityType;
-        */
+        var ActSaveMicroflow = createEntityParameterMicroflow(CurrentApp, pagesEntityFolder, "ACT_" + entity.Name + "_Save", entity);
 
-        /*
-         * idk how to instantiate entitytype then
-         * System.ArgumentOutOfRangeException: Mendix.StudioPro.ExtensionsAPI.Model.DataTypes.IEntityType is not a valid concrete element type. (Parameter 'T')
-        at Mendix.Modeler.ExtensionLoader.ModelProxies.ModelProxy.Create[T]() in Mendix.Modeler.ExtensionLoader\ModelProxies\ModelProxy.cs:line 69
+        var ValMicroflowCallActivity = createMicroflowCallActivity(CurrentApp, ValMicroflow, true, "isValid", (entity.Name, "$" + entity.Name));
+        var SaveMicroflowCallActivity = createMicroflowCallActivity(CurrentApp, SubSaveMicroflow, false, "", (entity.Name, "$" + entity.Name));
 
-        var EntityType = CurrentApp.Create<IEntityType>();
-        EntityType.Entity = entity.QualifiedName;
-        
-
-        SaveMicroflow.MicroflowReturnType = 
-        microflowService.Initialize(SaveMicroflow, (entity.Name, null));
-        */
+        microflowService.TryInsertAfterStart(ActSaveMicroflow, SaveMicroflowCallActivity, ValMicroflowCallActivity);
 
         transaction.Commit();
         return;
     }
 
-    private IFolder getCreateFolder(IFolderBase location, String name)
+    private IFolder getCreateFolder(IModel currentApp, IFolderBase location, String name)
     {
         var FolderExists = location.GetFolders().Any(Folder => Folder.Name == name);
         if (FolderExists)
         {
             return location.GetFolders().First(Folder => Folder.Name == name);
         }
-        var newObjectsFolder = CurrentApp.Create<IFolder>();
+        var newObjectsFolder = currentApp.Create<IFolder>();
         newObjectsFolder.Name = name;
         location.AddFolder(newObjectsFolder);
         return newObjectsFolder;
+    }
+
+    private IActionActivity createMicroflowCallActivity(IModel currentApp, IMicroflow calledMicroflow, Boolean useReturnVariable, String outputVariableName, params (string parameterName, string expression)[] parameters)
+    {
+        var microflowCallActivity = currentApp.Create<IActionActivity>();
+        var microflowCallAction = currentApp.Create<IMicroflowCallAction>();
+        microflowCallAction.MicroflowCall = currentApp.Create<IMicroflowCall>();
+        microflowCallAction.MicroflowCall.Microflow = calledMicroflow!.QualifiedName;
+        microflowCallActivity!.Action = microflowCallAction;
+
+        foreach (var (parameterName, expression) in parameters)
+        {
+            var parameterInCalledMicroflow = microflowService.GetParameters(calledMicroflow).Single(p => p.Name == parameterName);
+            var parameterMapping = currentApp.Create<IMicroflowCallParameterMapping>();
+            parameterMapping.Argument = microflowExpressionService.CreateFromString(expression);
+            parameterMapping.Parameter = parameterInCalledMicroflow.QualifiedName;
+            microflowCallAction.MicroflowCall.AddParameterMapping(parameterMapping);
+        }
+
+        if (useReturnVariable)
+        {
+            microflowCallAction.UseReturnVariable = true;
+            microflowCallAction.OutputVariableName = outputVariableName;
+        }
+
+        return microflowCallActivity;
+    }
+
+    private IMicroflow createEntityParameterMicroflow(IModel currentApp, IFolderBase location, String name, IEntity entity)
+    {
+        var Microflow = currentApp.Create<IMicroflow>();
+        Microflow.Name = name;
+
+        location.AddDocument(Microflow);
+
+        var EntityType = currentApp.Create<IObjectType>();
+        EntityType.Entity = entity.QualifiedName;
+        microflowService.Initialize(Microflow, (entity.Name, EntityType));
+
+        return Microflow;
     }
 }

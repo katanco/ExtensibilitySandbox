@@ -7,7 +7,7 @@
   </PropertyGroup>
 
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-		<OutputPath>C:\Users\Jonathan.Schmitt\Documents\Mendix\LocalSandbox10\extensions\ExtensibilitySandbox</OutputPath>
+		<OutputPath>C:\Program Files\Mendix\10.0.0.7454\modeler\extensions\ExtensibilitySandbox</OutputPath>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
 

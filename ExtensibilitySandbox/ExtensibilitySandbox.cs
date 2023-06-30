@@ -20,15 +20,17 @@ public class TestExtension : MenuBarExtension
     private readonly IDockingWindowService dockingWindowService;
     private readonly ISelectorDialogService selectorDialogService;
     private readonly IMicroflowService microflowService;
+    private readonly IMicroflowExpressionService microflowExpressionService;
     private readonly INameValidationService nameValidationService;
 
     [ImportingConstructor]
-    public TestExtension(IDockingWindowService dockingWindowService, ISelectorDialogService selectorDialogService, IMicroflowService microflowService, INameValidationService nameValidationService)
+    public TestExtension(IDockingWindowService dockingWindowService, ISelectorDialogService selectorDialogService, IMicroflowService microflowService, INameValidationService nameValidationService, IMicroflowExpressionService microflowExpressionService)
     {
         this.dockingWindowService = dockingWindowService;
         this.selectorDialogService = selectorDialogService;
         this.microflowService = microflowService;
         this.nameValidationService = nameValidationService;
+        this.microflowExpressionService = microflowExpressionService;
     }
 
     public override IEnumerable<MenuViewModelBase> GetMenus()
@@ -37,6 +39,7 @@ public class TestExtension : MenuBarExtension
         {
         };
 
+        
         yield return new MenuItemViewModel("Nuke :)", placeUnder: new[] { "app", "Productivity" })
         {
             Action = () =>
@@ -73,12 +76,14 @@ public class TestExtension : MenuBarExtension
                 }
             }
         };
+        
 
         yield return new MenuItemViewModel("Scaffold", placeUnder: new[] { "app", "Productivity" })
         {
             Action = () =>
             {
                 dockingWindowService.OpenPane(Scaffold.ID);
+                
             }
         };
 
@@ -278,20 +283,21 @@ public class TestExtension : MenuBarExtension
                             transaction.Commit();
                         };
 
-                        /*
-                        var activites = microflowService.GetAllMicroflowActivities((IMicroflow)unit);
-                        foreach (var activity in activites)
-                        {
-                            MessageBox.Show(activity.ToString());
-                        }
-                        
-                        var targetActivity = activites.Last(activity => true);
-                        microflowService.TryInsertBeforeActivity(targetActivity, action);     
-                        */
+                        //
+                        //var activites = microflowService.GetAllMicroflowActivities((IMicroflow)unit);
+                        //foreach (var activity in activites)
+                        //{
+                        //   MessageBox.Show(activity.ToString());
+                        //}
+                        //
+                        //var targetActivity = activites.Last(activity => true);
+                        //microflowService.TryInsertBeforeActivity(targetActivity, action);         
+                       
 
                     }
                 }
             }
         };
+        
     }
 }
